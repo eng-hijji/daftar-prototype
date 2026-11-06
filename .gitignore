@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /out/
+/public/precache-manifest.json
 
 # production
 /build
