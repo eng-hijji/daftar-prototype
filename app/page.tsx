@@ -1,22 +1,15 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { customers as initialCustomers, transactions } from '../data/data';
-import CustomerCard from './components/customercard';
+import CustomerCard, { type Customer } from './components/customercard';
 import { TrendingUp, TrendingDown, DollarSign, BookOpenText, Users } from 'lucide-react';
-import { addTransaction, getAllTransactions } from '@/lib/db';
+import { addTransaction, getAllTransactions, getCustomersWithTotals, seedDatabase } from '@/lib/db';
 
 export default function Home() {
   const [receivable, setReceivable] = useState(0);
   const [payable, setPayable] = useState(0);
   const [totalsLoading, setTotalsLoading] = useState(true);
-  const [customers, setCustomers] = useState(() => initialCustomers.map((customer) => ({
-    ...customer,
-    balance: transactions.reduce((total, transaction) => {
-      if (transaction.customerId !== customer.id) return total;
-      return total + (transaction.type === 'DEBT' ? transaction.amount : -transaction.amount);
-    }, 0),
-  })));
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   async function handleAddTransaction(customerId: string, type: 'DEBT' | 'PAYMENT', amount: number) {
     await addTransaction({
@@ -28,8 +21,11 @@ export default function Home() {
       createdAt: new Date().toISOString(),
     });
 
-    if (type === 'DEBT') setReceivable((current) => current + amount);
-    else setPayable((current) => current + amount);
+    if (type === 'DEBT') {
+      setReceivable((current) => current + amount);
+    } else {
+      setPayable((current) => current + amount);
+    }
 
     const balanceChange = type === 'DEBT' ? amount : -amount;
     setCustomers((current) => current.map((customer) => customer.id === customerId
@@ -40,21 +36,29 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadTransactionTotals() {
+    async function initializeLocalData() {
       try {
-        const totals = await getAllTransactions();
-        if (!cancelled) {
-          setReceivable(totals.Receivable);
-          setPayable(totals.Payable);
-        }
+
+        const [customersWithTotals, totals] = await Promise.all([
+          getCustomersWithTotals(),
+          getAllTransactions(),
+        ]);
+        if (cancelled) return;
+
+        setCustomers(customersWithTotals.map(({ totalBalance, ...customer }) => ({
+          ...customer,
+          balance: totalBalance,
+        })));
+        setReceivable(totals.Receivable);
+        setPayable(totals.Payable);
       } catch (error) {
-        console.error('Failed to load transaction totals:', error);
+        console.error('Failed to initialize local data:', error);
       } finally {
         if (!cancelled) setTotalsLoading(false);
       }
     }
 
-    void loadTransactionTotals();
+    void initializeLocalData();
     return () => {
       cancelled = true;
     };
@@ -65,7 +69,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#f5f7f6] px-4 py-7 text-slate-900 sm:px-7 sm:py-10" dir="rtl">
       <div className="mx-auto max-w-7xl space-y-9">
-        
+
         {/* Header */}
         <header className="flex flex-col gap-5 border-b border-slate-200 pb-7 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
@@ -138,13 +142,13 @@ export default function Home() {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {customers.map((customer) => (
+            {customers.map((customer) => (
               <CustomerCard
                 key={customer.id}
                 customer={customer}
                 onAddTransaction={handleAddTransaction}
               />
-          ))}
+            ))}
           </div>
         </section>
 

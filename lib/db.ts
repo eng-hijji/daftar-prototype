@@ -43,18 +43,22 @@ export const db = new ShopDatabase();
 
 // 4. Fully typed seed function
 export async function seedDatabase(): Promise<void> {
-  const customerCount: number = await db.customers.count();
-  
-  if (customerCount === 0) {
-    console.log('Database is empty. Seeding from mock files...');
-    
-    // Dexie's bulkAdd automatically validates against your Customer and Transaction types
-    await db.customers.bulkAdd(customers);
-    await db.transactions.bulkAdd(transactions);
-    
-    console.log('Seeding complete!');
-  }
-}export async function addCustomer(newCustomer: Customer) {
+  await db.transaction('rw', db.customers, db.transactions, async () => {
+    const [customerCount, transactionCount] = await Promise.all([
+      db.customers.count(),
+      db.transactions.count(),
+    ]);
+
+    if (customerCount === 0) {
+      await db.customers.bulkAdd(customers);
+    }
+    if (transactionCount === 0) {
+      await db.transactions.bulkAdd(transactions);
+    }
+  });
+}
+
+export async function addCustomer(newCustomer: Customer) {
   await db.customers.add(newCustomer);
   return newCustomer;
 }export async function getCustomerTransactions(customerId: string) {
@@ -63,7 +67,9 @@ export async function seedDatabase(): Promise<void> {
     .equals(customerId)
     .toArray();
 }
-
+export async function getCustomers(): Promise<(Customer )[]> {
+  return await db.customers.toArray();
+}
 
 // 1. Fetch all customers AND calculate their total balances in one go
 export async function getCustomersWithTotals() {
@@ -101,11 +107,7 @@ export async function getCustomersWithTotals() {
 
 // 2. Add a new transaction for a customer
 export async function addTransaction(transactionData: Transaction) {
-  // Save to Dexie
   await db.transactions.add(transactionData);
-  
-  // Return the updated balance for this customer so the UI can update cleanly
-  return await getCustomerNewBalance(transactionData.customerId);
 }
 
 // Helper to recalculate a single customer's balance

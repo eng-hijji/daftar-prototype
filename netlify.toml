@@ -4,6 +4,3 @@
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "false"
-
-# Netlify's Next.js integration selects and packages the build output.
-# Keep npm run build: it also generates the service worker's precache manifest.
