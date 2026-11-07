@@ -29,6 +29,35 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
+## Deploy on Netlify
+
+This repository contains the Next.js app at its root: `package.json`,
+`app/`, and `netlify.toml` are siblings. `daftar-prototype` is the repository
+name, not a subfolder in this checkout.
+
+In Netlify's build settings, use:
+
+- Base directory: repository root (leave blank or use `.`).
+- Package directory: leave blank.
+- Build command: `npm run build`.
+- Publish directory: `.next` (relative to the base directory).
+
+The root `netlify.toml` supplies the base, build command, and publish directory
+and takes precedence over equivalent dashboard settings. Keep Netlify's automatic
+Next.js framework support enabled; no SPA fallback rewrite is needed.
+
+Trigger a new deploy from `main`, clearing the build cache if retrying the failed
+deployment. Check the deploy log for the root `netlify.toml`, the resolved settings
+above, and Netlify's Next.js adapter. After the deploy succeeds, open its unique
+deploy URL and verify `/` loads the app, refreshing works, and JavaScript/CSS
+requests under `/_next/` succeed. Then check the production URL points to that
+successful deploy. A missing route should still return a normal 404.
+
+If a different branch actually moves the app into a `daftar-prototype/`
+subfolder, set the base directory to `daftar-prototype` and use its
+`netlify.toml`; keep the build command and publish directory relative to that
+base. Do not use that base directory for the current layout.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
