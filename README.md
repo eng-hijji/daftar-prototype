@@ -46,6 +46,12 @@ The root `netlify.toml` supplies the base, build command, and publish directory
 and takes precedence over equivalent dashboard settings. Keep Netlify's automatic
 Next.js framework support enabled; no SPA fallback rewrite is needed.
 
+The repository explicitly installs `@netlify/plugin-nextjs` and declares it in
+`netlify.toml` so the Next.js adapter processes `.next` during deployment. Do not
+upload the raw `.next` directory as ordinary static files: its nested
+`server/app/index.html` is not a working site root. The deploy log should show
+the Next.js adapter running and producing the required routing and runtime output.
+
 Trigger a new deploy from `main`, clearing the build cache if retrying the failed
 deployment. Check the deploy log for the root `netlify.toml`, the resolved settings
 above, and Netlify's Next.js adapter. After the deploy succeeds, open its unique
